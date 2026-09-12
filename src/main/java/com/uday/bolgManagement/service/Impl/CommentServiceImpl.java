@@ -3,8 +3,10 @@ package com.uday.bolgManagement.service.Impl;
 import com.uday.bolgManagement.dto.CommentRequest;
 import com.uday.bolgManagement.dto.CommentResponse;
 import com.uday.bolgManagement.exception.ResourceNotFoundException;
+import com.uday.bolgManagement.exception.UnauthorizedActionException;
 import com.uday.bolgManagement.model.Comment;
 import com.uday.bolgManagement.model.Post;
+import com.uday.bolgManagement.model.Role;
 import com.uday.bolgManagement.model.User;
 import com.uday.bolgManagement.repository.CommentRepository;
 import com.uday.bolgManagement.repository.PostRepository;
@@ -25,12 +27,12 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentResponse addComment(Long postId, CommentRequest request) {
+    public CommentResponse addComment(Long postId, CommentRequest request,String username) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(()-> new ResourceNotFoundException("Post","Id",postId));
 
-        User author = userRepository.findById(request.authorId())
-                .orElseThrow(()-> new ResourceNotFoundException("User","id", request.authorId()));
+        User author = userRepository.findByUsername(username)
+                .orElseThrow(()-> new ResourceNotFoundException("User","username",username));
 
         Comment comment = Comment.builder()
                 .content(request.content())
@@ -54,9 +56,19 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public void deleteComment(Long commentId) {
+    public void deleteComment(Long commentId,String username) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(()->new ResourceNotFoundException("Comment","id", commentId));
+
+        User currentuser = userRepository.findByUsername(username)
+                        .orElseThrow(()->new ResourceNotFoundException("User","usernem",username));
+
+        //same rule for comments deletion
+        boolean isAuthor = java.util.Objects.equals(comment.getAuthor().getId(),currentuser.getId());
+        boolean isAdmin= currentuser.getRole() == Role.ROLE_Admin;
+        if (!isAdmin && !isAuthor){
+            throw new UnauthorizedActionException("You are not authorized to delelte this comment");
+        }
         commentRepository.delete(comment);
     }
 

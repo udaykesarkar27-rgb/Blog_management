@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,8 +23,9 @@ public class CommentController {
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<CommentResponse> addComment(
             @PathVariable Long postId,
-            @Valid @RequestBody CommentRequest request){
-        CommentResponse created = commentService.addComment(postId, request);
+            @Valid @RequestBody CommentRequest request,
+            @AuthenticationPrincipal UserDetails userDetails){
+        CommentResponse created = commentService.addComment(postId, request,userDetails.getUsername());
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
@@ -32,8 +35,10 @@ public class CommentController {
     }
 
     @DeleteMapping("/comments/{id}")
-    public ResponseEntity<Void> deleteComment(@PathVariable Long id){
-    commentService.deleteComment(id);
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails){
+    commentService.deleteComment(id,userDetails.getUsername());
     return ResponseEntity.noContent().build();
     }
 }

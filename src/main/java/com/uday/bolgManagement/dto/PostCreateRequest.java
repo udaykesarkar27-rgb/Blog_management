@@ -10,9 +10,9 @@ public record PostCreateRequest (
     String title,
 
     @NotBlank(message = "Content cannot be blank")
-    String content,
+    String content
 
-    @NotNull(message = "Author id is required")
-    Long authorid
+//    @NotNull(message = "Author id is required")//clients should never submit who they are in the body
+//    Long authorid                               //the backend infers it from the jwt.
 )
 {}

@@ -12,6 +12,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,8 +25,10 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping
-    public ResponseEntity<PostResponse> createPost(@Valid @RequestBody PostCreateRequest request){
-        PostResponse created = postService.createPost(request); //we store the response from createPost() method
+    public ResponseEntity<PostResponse> createPost(
+            @Valid @RequestBody PostCreateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails){ // from where we got userdetails.
+        PostResponse created = postService.createPost(request,userDetails.getUsername()); //we store the response from createPost() method
         //and store it in 'created' so that we can return it.
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
@@ -41,12 +46,15 @@ public class PostController {
     @PutMapping("/{id}")
     public ResponseEntity<PostResponse> updatePost(
             @PathVariable Long id,
-            @Valid @RequestBody PostUpdateRequest request){
-        return ResponseEntity.ok(postService.updatePost(id,request));
+            @Valid @RequestBody PostUpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails){
+        return ResponseEntity.ok(postService.updatePost(id,request,userDetails.getUsername()));
     }
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePost(@PathVariable Long id){
-        postService.deletePost(id);
+    public ResponseEntity<Void> deletePost(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails){
+        postService.deletePost(id,userDetails.getUsername());
         return ResponseEntity.noContent().build();
     }
 

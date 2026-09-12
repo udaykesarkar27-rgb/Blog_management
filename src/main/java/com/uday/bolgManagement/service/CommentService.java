@@ -6,7 +6,7 @@ import com.uday.bolgManagement.dto.CommentResponse;
 import java.util.List;
 
 public interface CommentService {
-    CommentResponse addComment(Long postId, CommentRequest request);
+    CommentResponse addComment(Long postId, CommentRequest request,String username);
     List<CommentResponse> getCommentByPostId(Long postId);
-    void deleteComment(Long commentId);
+    void deleteComment(Long commentId,String username);
 }

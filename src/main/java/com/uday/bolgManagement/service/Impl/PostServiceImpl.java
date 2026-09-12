@@ -4,7 +4,9 @@ import com.uday.bolgManagement.dto.PostCreateRequest;
 import com.uday.bolgManagement.dto.PostResponse;
 import com.uday.bolgManagement.dto.PostUpdateRequest;
 import com.uday.bolgManagement.exception.ResourceNotFoundException;
+import com.uday.bolgManagement.exception.UnauthorizedActionException;
 import com.uday.bolgManagement.model.Post;
+import com.uday.bolgManagement.model.Role;
 import com.uday.bolgManagement.model.User;
 import com.uday.bolgManagement.repository.PostRepository;
 import com.uday.bolgManagement.repository.UserRepository;
@@ -24,9 +26,9 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public PostResponse createPost(PostCreateRequest request) {
-        User author = userRepository.findById(request.authorid())
-                .orElseThrow(() -> new ResourceNotFoundException("User","id",request.authorid()));
+    public PostResponse createPost(PostCreateRequest request,String username) {
+        User author = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User","username",username));
 
         Post post = Post.builder()
                 .title(request.title())
@@ -54,9 +56,17 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public PostResponse updatePost(Long id, PostUpdateRequest request) {
+    public PostResponse updatePost(Long id, PostUpdateRequest request,String username) {
         Post post = postRepository.findById(id)
                 .orElseThrow(()->new ResourceNotFoundException("Post","id",id));
+
+        User currentUser = userRepository.findByUsername(username)
+                        .orElseThrow(()->new ResourceNotFoundException("User","username",username));
+
+        //Rule: Only the original author can edit this post
+        if (!java.util.Objects.equals(post.getAuthor().getId(), currentUser.getId())) {
+            throw new UnauthorizedActionException("You are not authorized to update this post");
+        }
 
         post.setTitle(request.title());
         post.setContent(request.content());
@@ -67,9 +77,19 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public void deletePost(Long id) {
+    public void deletePost(Long id,String username) {
         Post post = postRepository.findById(id)
                 .orElseThrow(()->new ResourceNotFoundException("Post", "id", id));
+        User curentUser = userRepository.findByUsername(username)
+                        .orElseThrow(()->new ResourceNotFoundException("User","user",username));
+
+        //Rule: Either the original Author or An Admin can delete the post.
+        boolean isadmin = curentUser.getRole() == Role.ROLE_Admin;
+        boolean isauthor = java.util.Objects.equals(curentUser.getId(),post.getAuthor().getId());
+
+        if (!isadmin && !isauthor){
+            throw new UnauthorizedActionException("You are not authorized to delete this post!");
+        }
         postRepository.delete(post);
     }
 
